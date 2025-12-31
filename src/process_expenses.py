@@ -92,12 +92,24 @@ def process_expenses(categorize: bool = True) -> None:
     print("\n[Step 3] Saving Results...")
     print("-" * 60)
     
-    json_output = output_dir / "all_transactions.json"
-    parser.export_to_json(all_transactions, str(json_output))
+    # Save parsed transactions (without categories)
+    json_parsed = output_dir / "all_transactions_parsed.json"
+    parser.export_to_json(all_transactions, str(json_parsed))
+    
+    # Save categorized transactions (if categorization was done)
+    if categorize:
+        json_categorized = output_dir / "all_transactions_categorized.json"
+        with open(json_categorized, 'w') as f:
+            json.dump(all_transactions, f, indent=2)
+        
+        print(f"✓ Parsed transactions: {json_parsed}")
+        print(f"✓ Categorized transactions: {json_categorized}")
+    else:
+        print(f"✓ Parsed transactions: {json_parsed}")
     
     print(f"\n{'='*60}")
     print(f"✓ Processing Complete!")
-    print(f"✓ Output: {json_output}")
+    print(f"✓ Output files saved in: {output_dir}")
     print(f"  Total transactions: {len(all_transactions)}")
     if categorize:
         print(f"  Categorization: Enabled (using LLM)")

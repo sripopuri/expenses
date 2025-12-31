@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 from typing import List, Dict, Optional
 from lm_studio_client import LMStudioClient, Message
+from merchant_extractor import MerchantExtractor
 
 
 class ExpenseCategorizer:
@@ -136,7 +137,7 @@ Respond with ONLY the category ID (e.g., 'food', 'transportation', 'other'), not
             transactions: List of transaction dictionaries
         
         Returns:
-            List of transactions with added 'category' field
+            List of transactions with added 'category', 'category_name', and 'merchant' fields
         """
         if not self.client.model:
             print("Error: No LLM model loaded. Cannot categorize.")
@@ -149,10 +150,14 @@ Respond with ONLY the category ID (e.g., 'food', 'transportation', 'other'), not
             # Get the description
             description = transaction.get('description', '')
             
+            # Extract merchant name
+            merchant = MerchantExtractor.extract_merchant(description)
+            
             # Categorize
             category_id = self.categorize_transaction(description)
             
-            # Add category to transaction
+            # Add category, category_name, and merchant to transaction
+            transaction['merchant'] = merchant
             transaction['category'] = category_id or 'other'
             transaction['category_name'] = self.category_map.get(category_id, 'Other')
             
