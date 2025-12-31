@@ -204,6 +204,7 @@ class BankStatementParser:
     def export_to_csv(self, transactions: List[Dict[str, str]], output_path: str) -> None:
         """
         Export transactions to a CSV file.
+        (Deprecated - kept for backward compatibility)
         
         Args:
             transactions: List of transaction dictionaries
@@ -322,18 +323,13 @@ def main():
     # Sort transactions by date (newest first)
     all_transactions.sort(key=lambda x: x.get('date', ''), reverse=True)
     
-    # Export to JSON format
+    # Export to JSON format only
     json_output = output_dir / "all_transactions.json"
     parser.export_to_json(all_transactions, str(json_output))
-    
-    # Also export to CSV format for reference
-    csv_output = output_dir / "all_transactions.csv"
-    parser.export_to_csv(all_transactions, str(csv_output))
     
     print(f"\n{'='*50}")
     print(f"✓ Combined {len(all_transactions)} transactions from {len(pdf_files)} PDFs")
     print(f"✓ JSON saved to: {json_output}")
-    print(f"✓ CSV saved to: {csv_output}")
 
 
 if __name__ == "__main__":
