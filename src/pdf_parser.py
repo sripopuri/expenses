@@ -162,17 +162,30 @@ class BankStatementParser:
                     i += 1
                     continue
                 
-                # Amount is typically on next line
+                # Amount is typically on next line or line after that
                 amount = None
                 is_credit = False
-                if i + 1 < len(lines):
-                    next_line = lines[i + 1].strip()
-                    # Look for pattern like: +14158799686$21.28⧫ or J6UUVJIW 94103$21.07⧫ or -$53.97
+                lines_to_check = [i + 1, i + 2] if i + 2 < len(lines) else [i + 1] if i + 1 < len(lines) else []
+                
+                for line_idx in lines_to_check:
+                    next_line = lines[line_idx].strip()
+                    # Look for various amount patterns:
+                    # Pattern 1: +14158799686$21.28⧫ or J6UUVJIW 94103$21.07⧫ or -$53.97
+                    # Pattern 2: 8009256278-$2,436.94 (phone number followed by negative amount)
+                    
+                    # Try pattern 2 first (number-$amount indicates credit)
+                    amount_match = re.search(r'\d+-\$([\d,]+\.\d{2})', next_line)
+                    if amount_match:
+                        is_credit = True
+                        amount = amount_match.group(1)
+                        break
+                    
+                    # Try pattern 1
                     amount_match = re.search(r'(-?)\$?([\d,]+\.\d{2})⧫?', next_line)
                     if amount_match:
                         is_credit = amount_match.group(1) == '-'
                         amount = amount_match.group(2)
-                        i += 1  # Skip the amount line since we processed it
+                        break
                 
                 # Create transaction if we have date, description, and amount
                 if amount and description and len(description) > 2:
