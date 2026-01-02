@@ -28,6 +28,7 @@ class ExpenseCategorizer:
         self.categories = self._load_categories()
         self.prompt_config = self._load_prompt_config()
         self.category_map = {cat['id']: cat['name'] for cat in self.categories}
+        self.merchant_overrides = self._load_merchant_overrides()
     
     def _load_categories(self) -> List[Dict]:
         """Load category definitions from JSON file"""
@@ -54,6 +55,19 @@ class ExpenseCategorizer:
             return {}
         except json.JSONDecodeError as e:
             print(f"Error: Failed to parse prompt config: {e}")
+            return {}
+    
+    def _load_merchant_overrides(self) -> Dict:
+        """Load merchant category overrides from JSON file"""
+        config_file = Path(__file__).parent.parent / "config" / "merchant_category_overrides.json"
+        try:
+            with open(config_file, 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            # Override file is optional, return empty dict if not found
+            return {}
+        except json.JSONDecodeError as e:
+            print(f"Error: Failed to parse merchant overrides: {e}")
             return {}
     
     def _build_categorization_prompt(self, transaction_description: str) -> str:
@@ -132,6 +146,7 @@ Respond with ONLY the category ID (e.g., 'groceries', 'food_restaurants', 'subsc
     def categorize_transactions(self, transactions: List[Dict]) -> List[Dict]:
         """
         Categorize a list of transactions
+        First checks merchant overrides, then falls back to LLM categorization
         
         Args:
             transactions: List of transaction dictionaries
@@ -145,6 +160,8 @@ Respond with ONLY the category ID (e.g., 'groceries', 'food_restaurants', 'subsc
         
         categorized = []
         total = len(transactions)
+        override_count = 0
+        llm_count = 0
         
         for i, transaction in enumerate(transactions, 1):
             # Get the description
@@ -153,20 +170,30 @@ Respond with ONLY the category ID (e.g., 'groceries', 'food_restaurants', 'subsc
             # Extract merchant name
             merchant = MerchantExtractor.extract_merchant(description)
             
-            # Categorize
-            category_id = self.categorize_transaction(description)
+            # Check if merchant has an override
+            if merchant in self.merchant_overrides:
+                override = self.merchant_overrides[merchant]
+                category_id = override['category_id']
+                category_name = override['category_name']
+                override_count += 1
+            else:
+                # Use LLM categorization
+                category_id = self.categorize_transaction(description)
+                category_name = self.category_map.get(category_id, 'Other')
+                llm_count += 1
             
             # Add category, category_name, and merchant to transaction
             transaction['merchant'] = merchant
             transaction['category'] = category_id or 'other'
-            transaction['category_name'] = self.category_map.get(category_id, 'Other')
+            transaction['category_name'] = category_name
             
             categorized.append(transaction)
             
             # Progress indicator
             if i % 10 == 0 or i == total:
-                print(f"  Categorized {i}/{total} transactions")
+                print(f"  Categorized {i}/{total} transactions ({override_count} overrides, {llm_count} LLM)")
         
+        print(f"\n✓ Categorization complete: {override_count} merchant overrides, {llm_count} LLM categorizations")
         return categorized
     
     def get_categorization_summary(self, transactions: List[Dict]) -> Dict[str, Dict]:

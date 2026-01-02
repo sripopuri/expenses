@@ -23,8 +23,10 @@ def load_transactions():
 transactions = load_transactions()
 df = pd.read_csv('output/all_transactions_categorized.csv')
 
-# Convert amount to float
+# Convert amount to float and parse date
 df['amount'] = df['amount'].astype(float)
+df['date'] = pd.to_datetime(df['date'])
+df['month'] = df['date'].dt.to_period('M').astype(str)
 
 # ===== SIDEBAR =====
 st.sidebar.header("Dashboard Options")
@@ -82,13 +84,33 @@ fig_categories.update_layout(
 )
 st.plotly_chart(fig_categories, use_container_width=True)
 
-# Display category summary table
-st.subheader("Category Summary")
-st.dataframe(
-    category_spending.reset_index().rename(columns={'category_name': 'Category'}),
-    use_container_width=True,
-    hide_index=True
+# Display category summary table - replaced with line chart
+st.subheader("Spending Trends by Category Over Time")
+
+# Prepare data for line chart
+monthly_category_spending = df.groupby(['month', 'category_name'])['amount'].sum().reset_index()
+
+# Create line chart
+fig_trends = px.line(
+    monthly_category_spending,
+    x='month',
+    y='amount',
+    color='category_name',
+    title='Monthly Spending by Category',
+    labels={'amount': 'Amount Spent ($)', 'month': 'Month', 'category_name': 'Category'},
+    markers=True
 )
+fig_trends.update_layout(
+    height=500,
+    xaxis_title='Month',
+    yaxis_title='Amount Spent ($)',
+    legend_title='Category',
+    hovermode='x unified'
+)
+fig_trends.update_traces(
+    hovertemplate='$%{y:,.2f}<extra></extra>'
+)
+st.plotly_chart(fig_trends, use_container_width=True)
 
 st.divider()
 

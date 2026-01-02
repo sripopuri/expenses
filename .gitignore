@@ -34,12 +34,17 @@ wheels/
 *~
 .DS_Store
 
-# Project specific
-input/
-output/
-*.pdf
+# Project specific - Data files
+input/**/*.pdf
+input/**/*.xlsx
+output/*.json
+output/*.csv
+
+# Config overrides (generated from user corrections)
+config/merchant_category_overrides.json
+
+# Environment
 .env
-config/
 
 # Logs
 *.log
