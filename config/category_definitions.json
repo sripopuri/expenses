@@ -1,0 +1,76 @@
+{
+  "categories": [
+    {
+      "id": "housing",
+      "name": "Housing",
+      "description": "Anything required to live in your home.",
+      "examples": "rent/mortgage, HOA, property tax, home insurance, repairs/maintenance, furniture (if home-related)"
+    },
+    {
+      "id": "utilities",
+      "name": "Utilities & Connectivity",
+      "description": "Bills that keep the home running and you connected.",
+      "examples": "electricity, gas, water, trash, internet, mobile plan"
+    },
+    {
+      "id": "groceries",
+      "name": "Groceries",
+      "description": "General merchandise and groceries for home consumption.",
+      "examples": "supermarket groceries, wholesale club purchases, household supplies, general merchandise"
+    },
+    {
+      "id": "food_restaurants",
+      "name": "Food & Restaurants",
+      "description": "Eating and drinking outside the home.",
+      "examples": "restaurants, cafes, takeout, food delivery, coffee shops, bars, snacks while out"
+    },
+    {
+      "id": "transportation",
+      "name": "Transportation",
+      "description": "Costs to move around, especially vehicle + commuting.",
+      "examples": "gas/EV charging, public transit, tolls, parking, car maintenance, registration, rideshares"
+    },
+    {
+      "id": "health",
+      "name": "Health & Wellness",
+      "description": "Medical and health-related spending.",
+      "examples": "health insurance premiums, doctor visits, medicines, lab tests, dental/vision, therapy"
+    },
+    {
+      "id": "personal_care",
+      "name": "Personal Care & Fitness",
+      "description": "Personal grooming and fitness routines (non-medical).",
+      "examples": "gym membership, sports/classes, haircut, skincare, grooming"
+    },
+    {
+      "id": "shopping",
+      "name": "Shopping",
+      "description": "Lifestyle-related shopping for wants and personal purchases.",
+      "examples": "clothing, accessories, electronics, hobbies, Amazon/retail non-grocery, beauty products"
+    },
+    {
+      "id": "subscriptions",
+      "name": "Subscriptions",
+      "description": "Recurring digital services and subscription memberships.",
+      "examples": "streaming services (Netflix, Hulu, Disney+), apps, software, music, gaming subscriptions, memberships"
+    },
+    {
+      "id": "travel",
+      "name": "Travel & Occasions",
+      "description": "Planned/occasional larger activities and celebrations.",
+      "examples": "flights, hotels, vacation spend, out-of-town trips, weddings, special celebrations"
+    },
+    {
+      "id": "financial",
+      "name": "Financial & Future",
+      "description": "Money management: obligations + building the future.",
+      "examples": "debt payments, taxes, interest/fees, savings, investments, gifts/donations"
+    },
+    {
+      "id": "other",
+      "name": "Other",
+      "description": "Expenses that don't fit into any of the above categories.",
+      "examples": "miscellaneous purchases, unidentifiable transactions"
+    }
+  ]
+}
