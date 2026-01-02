@@ -135,16 +135,17 @@ Each transaction includes:
 
 ## Categories
 
-The system categorizes expenses into:
+The system now categorizes expenses into:
 
 - **Housing** - Rent, mortgage, property maintenance
 - **Utilities & Connectivity** - Internet, phone, utilities
-- **Food** - Groceries, restaurants, delivery
+- **Groceries** - Supermarket groceries, household supplies, general merchandise
+- **Food & Restaurants** - Restaurants, cafes, takeout, food delivery
 - **Transportation** - Rideshares, gas, parking, transit
 - **Health & Wellness** - Medical, dental, therapy
 - **Personal Care & Fitness** - Gym, haircut, skincare
-- **Shopping & Household** - Clothing, electronics, home goods
-- **Lifestyle & Digital** - Streaming, apps, subscriptions
+- **Shopping** - Clothing, accessories, electronics, lifestyle shopping
+- **Subscriptions** - Netflix, Hulu, apps, software, music subscriptions
 - **Travel & Occasions** - Flights, hotels, vacations
 - **Financial & Future** - Loans, taxes, investments, donations
 - **Other** - Unclassified expenses
