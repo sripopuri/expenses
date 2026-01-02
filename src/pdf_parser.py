@@ -133,6 +133,7 @@ class BankStatementParser:
     def parse_transactions(self, text: str) -> List[Dict[str, str]]:
         """
         Parse transaction details from extracted PDF text.
+        Includes both charges and credits (returns/refunds), but excludes payments.
         Specifically optimized for Amex statement format where amounts are on next line.
         
         Args:
@@ -156,19 +157,21 @@ class BankStatementParser:
                 date = date_match.group(1)
                 description = date_match.group(2).strip()
                 
-                # Skip payment lines
-                if 'THANK YOU' in description:
+                # Skip payment lines (THANK YOU, MOBILE PAYMENT, etc.)
+                if any(keyword in description.upper() for keyword in ['THANK YOU', 'MOBILE PAYMENT', 'PAYMENT - THANK YOU', 'AUTOPAY']):
                     i += 1
                     continue
                 
                 # Amount is typically on next line
                 amount = None
+                is_credit = False
                 if i + 1 < len(lines):
                     next_line = lines[i + 1].strip()
-                    # Look for pattern like: +14158799686$21.28⧫ or J6UUVJIW 94103$21.07⧫
-                    amount_match = re.search(r'\$?([\d,]+\.\d{2})⧫?', next_line)
+                    # Look for pattern like: +14158799686$21.28⧫ or J6UUVJIW 94103$21.07⧫ or -$53.97
+                    amount_match = re.search(r'(-?)\$?([\d,]+\.\d{2})⧫?', next_line)
                     if amount_match:
-                        amount = amount_match.group(1)
+                        is_credit = amount_match.group(1) == '-'
+                        amount = amount_match.group(2)
                         i += 1  # Skip the amount line since we processed it
                 
                 # Create transaction if we have date, description, and amount
@@ -181,10 +184,15 @@ class BankStatementParser:
                     if len(description) > 2:
                         key = f"{date}_{description}_{amount}"
                         if key not in seen_descriptions:
+                            # For credits, make amount negative
+                            final_amount = amount.replace(',', '')
+                            if is_credit:
+                                final_amount = f"-{final_amount}"
+                            
                             transactions.append({
                                 'date': date,
                                 'description': description,
-                                'amount': amount.replace(',', ''),  # Remove commas from amount
+                                'amount': final_amount,
                                 'bank': self.current_bank,
                                 'card': self.current_card
                             })

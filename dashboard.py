@@ -54,20 +54,31 @@ category_spending = df.groupby('category_name').agg({
 category_spending.columns = ['Total Amount', 'Transaction Count']
 category_spending = category_spending.sort_values('Total Amount', ascending=False)
 
-# Create bar chart for categories
-fig_categories = px.bar(
+# Calculate total spending and percentage
+total_spending = category_spending['Total Amount'].sum()
+category_spending['Percentage'] = (category_spending['Total Amount'] / total_spending * 100).round(2)
+
+# Create pie chart for categories
+fig_categories = px.pie(
     category_spending.reset_index(),
-    x='category_name',
-    y='Total Amount',
+    values='Total Amount',
+    names='category_name',
     title='Total Spending by Category',
-    labels={'Total Amount': 'Amount ($)', 'category_name': 'Category'},
-    color='Total Amount',
-    color_continuous_scale='Viridis'
+    hover_data={'Total Amount': ':,.2f', 'Percentage': ':.2f%', 'Transaction Count': True},
+    labels={'Total Amount': 'Amount ($)', 'category_name': 'Category'}
+)
+fig_categories.update_traces(
+    textposition='inside',
+    textinfo='percent+label',
+    hovertemplate='<b>%{label}</b><br>' +
+                  'Total Spent: $%{value:,.2f}<br>' +
+                  'Percentage: %{percent}<br>' +
+                  'Transactions: %{customdata[1]}<br>' +
+                  '<extra></extra>'
 )
 fig_categories.update_layout(
-    xaxis_tickangle=-45,
-    height=500,
-    showlegend=False
+    height=600,
+    showlegend=True
 )
 st.plotly_chart(fig_categories, use_container_width=True)
 
@@ -98,14 +109,17 @@ merchant_analysis = scatter_df.groupby('merchant').agg({
 merchant_analysis.columns = ['Total Amount', 'Transaction Count', 'Median Amount']
 merchant_analysis = merchant_analysis.reset_index()
 
+# Add absolute value column for size (to handle negative amounts/credits)
+merchant_analysis['Size'] = merchant_analysis['Total Amount'].abs()
+
 fig_scatter = px.scatter(
     merchant_analysis,
     x='Transaction Count',
     y='Total Amount',
-    hover_data={'Transaction Count': True, 'Total Amount': ':.2f', 'Median Amount': ':.2f', 'merchant': True},
+    hover_data={'Transaction Count': True, 'Total Amount': ':.2f', 'Median Amount': ':.2f', 'merchant': True, 'Size': False},
     title=scatter_title,
     labels={'Total Amount': 'Total Spent ($)', 'Transaction Count': 'Number of Transactions'},
-    size='Total Amount',
+    size='Size',
     color='Total Amount',
     color_continuous_scale='Viridis',
     hover_name='merchant',
