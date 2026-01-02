@@ -82,7 +82,7 @@ Available categories:
 Rules:
 {chr(10).join([f"- {rule}" for rule in self.prompt_config.get('categorization_guidelines', [])])}
 
-Respond with ONLY the category ID (e.g., 'food', 'transportation', 'other'), nothing else."""
+Respond with ONLY the category ID (e.g., 'groceries', 'food_restaurants', 'subscriptions', 'transportation', 'other'), nothing else."""
         
         return prompt
     

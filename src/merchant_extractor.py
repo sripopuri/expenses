@@ -135,12 +135,14 @@ class MerchantExtractor:
         
         if any(x in merchant_lower for x in ['uber', 'lyft', 'taxi', 'parking', 'gas']):
             return 'transportation'
-        elif any(x in merchant_lower for x in ['netflix', 'hulu', 'disney', 'spotify', 'openai']):
-            return 'lifestyle'
-        elif any(x in merchant_lower for x in ['walmart', 'amazon', 'target', 'costco']):
+        elif any(x in merchant_lower for x in ['netflix', 'hulu', 'disney', 'spotify', 'openai', 'apple', 'adobe']):
+            return 'subscriptions'
+        elif any(x in merchant_lower for x in ['amazon', 'target', 'best buy', 'costco']):
             return 'shopping'
-        elif any(x in merchant_lower for x in ['restaurant', 'cafe', 'starbucks', 'chipotle', 'mcdonalds']):
-            return 'food'
+        elif any(x in merchant_lower for x in ['restaurant', 'cafe', 'starbucks', 'chipotle', 'mcdonalds', 'burger', 'pizza']):
+            return 'food_restaurants'
+        elif any(x in merchant_lower for x in ['grocery', 'safeway', 'kroger', 'whole foods', 'trader']):
+            return 'groceries'
         elif any(x in merchant_lower for x in ['cvs', 'pharmacy', 'walgreens', 'hospital', 'doctor']):
             return 'health'
         elif any(x in merchant_lower for x in ['hotel', 'airbnb', 'airline', 'flight']):
