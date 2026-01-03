@@ -18,15 +18,16 @@ st.title("💰 Expense Analysis Dashboard")
 @st.cache_data
 def load_transactions():
     with open('output/all_transactions_categorized.json', 'r') as f:
-        return json.load(f)
+        data = json.load(f)
+    # Convert JSON to DataFrame
+    df = pd.DataFrame(data)
+    # Convert amount to float and parse date
+    df['amount'] = df['amount'].astype(float)
+    df['date'] = pd.to_datetime(df['date'])
+    df['month'] = df['date'].dt.to_period('M').astype(str)
+    return df
 
-transactions = load_transactions()
-df = pd.read_csv('output/all_transactions_categorized.csv')
-
-# Convert amount to float and parse date
-df['amount'] = df['amount'].astype(float)
-df['date'] = pd.to_datetime(df['date'])
-df['month'] = df['date'].dt.to_period('M').astype(str)
+df = load_transactions()
 
 # ===== SIDEBAR =====
 st.sidebar.header("Dashboard Options")
@@ -84,33 +85,95 @@ fig_categories.update_layout(
 )
 st.plotly_chart(fig_categories, use_container_width=True)
 
-# Display category summary table - replaced with line chart
-st.subheader("Spending Trends by Category Over Time")
+# Display spending trends with tabs
+st.subheader("Spending Trends Over Time")
 
-# Prepare data for line chart
-monthly_category_spending = df.groupby(['month', 'category_name'])['amount'].sum().reset_index()
+# Create tabs for different views
+tab1, tab2 = st.tabs(["📈 Total Monthly Spending", "📊 Spending by Category"])
 
-# Create line chart
-fig_trends = px.line(
-    monthly_category_spending,
-    x='month',
-    y='amount',
-    color='category_name',
-    title='Monthly Spending by Category',
-    labels={'amount': 'Amount Spent ($)', 'month': 'Month', 'category_name': 'Category'},
-    markers=True
-)
-fig_trends.update_layout(
-    height=500,
-    xaxis_title='Month',
-    yaxis_title='Amount Spent ($)',
-    legend_title='Category',
-    hovermode='x unified'
-)
-fig_trends.update_traces(
-    hovertemplate='$%{y:,.2f}<extra></extra>'
-)
-st.plotly_chart(fig_trends, use_container_width=True)
+with tab1:
+    # Extract year from month for filtering
+    df['year'] = df['date'].dt.year
+    available_years = sorted(df['year'].unique())
+    
+    # Add year filter dropdown
+    year_options = ['All Years'] + [str(year) for year in available_years]
+    selected_year = st.selectbox('Select Year:', year_options, key='year_filter')
+    
+    # Filter data based on selection
+    if selected_year == 'All Years':
+        filtered_df = df
+        chart_title = 'Total Monthly Spending (All Years)'
+    else:
+        filtered_df = df[df['year'] == int(selected_year)]
+        chart_title = f'Total Monthly Spending ({selected_year})'
+    
+    # Total monthly spending (all categories combined)
+    monthly_total_spending = filtered_df.groupby('month')['amount'].sum().reset_index()
+    monthly_total_spending = monthly_total_spending.sort_values('month')
+    
+    # Calculate average spending across filtered months
+    average_spending = monthly_total_spending['amount'].mean()
+    
+    fig_total_trends = px.line(
+        monthly_total_spending,
+        x='month',
+        y='amount',
+        title=chart_title,
+        labels={'amount': 'Amount Spent ($)', 'month': 'Month'},
+        markers=True
+    )
+    fig_total_trends.update_traces(
+        line_color='#636EFA',
+        line_width=3,
+        marker=dict(size=8),
+        hovertemplate='<b>Month:</b> %{x}<br><b>Total Spent:</b> $%{y:,.2f}<extra></extra>',
+        name='Monthly Spending'
+    )
+    
+    # Add average line
+    fig_total_trends.add_hline(
+        y=average_spending,
+        line_dash="dash",
+        line_color="red",
+        annotation_text=f"Average: ${average_spending:,.2f}",
+        annotation_position="right",
+        annotation=dict(font_size=12, font_color="red")
+    )
+    
+    fig_total_trends.update_layout(
+        height=500,
+        xaxis_title='Month',
+        yaxis_title='Amount Spent ($)',
+        hovermode='x unified',
+        showlegend=True
+    )
+    st.plotly_chart(fig_total_trends, use_container_width=True)
+
+with tab2:
+    # Spending by category breakdown
+    monthly_category_spending = df.groupby(['month', 'category_name'])['amount'].sum().reset_index()
+    
+    fig_category_trends = px.line(
+        monthly_category_spending,
+        x='month',
+        y='amount',
+        color='category_name',
+        title='Monthly Spending by Category',
+        labels={'amount': 'Amount Spent ($)', 'month': 'Month', 'category_name': 'Category'},
+        markers=True
+    )
+    fig_category_trends.update_layout(
+        height=500,
+        xaxis_title='Month',
+        yaxis_title='Amount Spent ($)',
+        legend_title='Category',
+        hovermode='x unified'
+    )
+    fig_category_trends.update_traces(
+        hovertemplate='$%{y:,.2f}<extra></extra>'
+    )
+    st.plotly_chart(fig_category_trends, use_container_width=True)
 
 st.divider()
 

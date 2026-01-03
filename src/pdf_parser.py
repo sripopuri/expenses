@@ -1,6 +1,7 @@
 """
 PDF Bank Statement Parser
 Extracts transaction details from bank statement PDFs and exports to JSON.
+Uses bank-specific parsers for different statement formats.
 """
 
 import os
@@ -11,6 +12,7 @@ import csv
 import json
 from datetime import datetime
 import PyPDF2
+from .bank_parsers import BankParserFactory
 
 
 class BankStatementParser:
@@ -101,40 +103,53 @@ class BankStatementParser:
         Returns:
             Bank/card issuer name
         """
-        # Try to extract from text first
+        # Try filename first for more reliable detection
+        if 'boa' in pdf_filename.lower() or 'bankofamerica' in pdf_filename.lower():
+            return 'Bank of America'
+        elif 'amex' in pdf_filename.lower():
+            return 'American Express'
+        elif 'chase' in pdf_filename.lower():
+            return 'Chase'
+        elif 'wells' in pdf_filename.lower():
+            return 'Wells Fargo'
+        
+        # Check for website/domain identifiers first (more reliable)
+        if 'americanexpress.com' in text.lower():
+            return 'American Express'
+        if 'bankofamerica.com' in text.lower():
+            return 'Bank of America'
+        if 'chase.com' in text.lower():
+            return 'Chase'
+        
+        # Try to extract from text (order matters - check longer names first)
+        # Use word boundaries to avoid partial matches
         bank_names = [
-            'American Express',
-            'Chase',
             'Bank of America',
+            'American Express',
             'Wells Fargo',
+            'Capital One',
             'Citibank',
             'Discover',
-            'Capital One',
             'US Bank'
         ]
         
         for bank_name in bank_names:
-            if bank_name.lower() in text.lower():
+            # Check with word boundaries
+            pattern = r'\b' + re.escape(bank_name) + r'\b'
+            if re.search(pattern, text, re.IGNORECASE):
                 return bank_name
         
-        # Try to infer from filename
-        if 'amex' in pdf_filename.lower():
-            return 'American Express'
-        elif 'chase' in pdf_filename.lower():
+        # Check Chase last (to avoid matching "purchases")
+        if re.search(r'\bChase\b', text, re.IGNORECASE):
             return 'Chase'
-        elif 'boa' in pdf_filename.lower():
-            return 'Bank of America'
-        elif 'wells' in pdf_filename.lower():
-            return 'Wells Fargo'
         
-        # Default fallback
-        return 'Unknown Bank'
+        # Default to Chase if not found
+        return 'Chase'
     
     def parse_transactions(self, text: str) -> List[Dict[str, str]]:
         """
         Parse transaction details from extracted PDF text.
-        Includes both charges and credits (returns/refunds), but excludes payments.
-        Specifically optimized for Amex statement format where amounts are on next line.
+        Automatically detects bank type and uses appropriate parser.
         
         Args:
             text: Extracted text from PDF
@@ -142,78 +157,16 @@ class BankStatementParser:
         Returns:
             List of transaction dictionaries
         """
-        transactions = []
-        seen_descriptions = set()
+        # Get the appropriate parser for this bank
+        parser = BankParserFactory.get_parser(text, "")
+        parser.bank_name = self.current_bank
         
-        lines = text.split('\n')
-        i = 0
-        while i < len(lines):
-            line = lines[i].strip()
-            
-            # Look for lines with dates in Amex format (MM/DD/YY with space after)
-            date_match = re.match(r'^(\d{1,2}/\d{1,2}/\d{2,4})\s+(.+)', line)
-            
-            if date_match and 'Closing Date' not in line:
-                date = date_match.group(1)
-                description = date_match.group(2).strip()
-                
-                # Skip payment lines (THANK YOU, MOBILE PAYMENT, etc.)
-                if any(keyword in description.upper() for keyword in ['THANK YOU', 'MOBILE PAYMENT', 'PAYMENT - THANK YOU', 'AUTOPAY']):
-                    i += 1
-                    continue
-                
-                # Amount is typically on next line or line after that
-                amount = None
-                is_credit = False
-                lines_to_check = [i + 1, i + 2] if i + 2 < len(lines) else [i + 1] if i + 1 < len(lines) else []
-                
-                for line_idx in lines_to_check:
-                    next_line = lines[line_idx].strip()
-                    # Look for various amount patterns:
-                    # Pattern 1: +14158799686$21.28⧫ or J6UUVJIW 94103$21.07⧫ or -$53.97
-                    # Pattern 2: 8009256278-$2,436.94 (phone number followed by negative amount)
-                    
-                    # Try pattern 2 first (number-$amount indicates credit)
-                    amount_match = re.search(r'\d+-\$([\d,]+\.\d{2})', next_line)
-                    if amount_match:
-                        is_credit = True
-                        amount = amount_match.group(1)
-                        break
-                    
-                    # Try pattern 1
-                    amount_match = re.search(r'(-?)\$?([\d,]+\.\d{2})⧫?', next_line)
-                    if amount_match:
-                        is_credit = amount_match.group(1) == '-'
-                        amount = amount_match.group(2)
-                        break
-                
-                # Create transaction if we have date, description, and amount
-                if amount and description and len(description) > 2:
-                    # Clean description - remove phone numbers and reference codes
-                    description = re.sub(r'\+?\d{10,}', '', description)
-                    description = re.sub(r'[A-Z0-9]{6,}\s*\d{5}', '', description)
-                    description = ' '.join(description.split())
-                    
-                    if len(description) > 2:
-                        key = f"{date}_{description}_{amount}"
-                        if key not in seen_descriptions:
-                            # For credits, make amount negative
-                            final_amount = amount.replace(',', '')
-                            if is_credit:
-                                final_amount = f"-{final_amount}"
-                            
-                            transactions.append({
-                                'date': date,
-                                'description': description,
-                                'amount': final_amount,
-                                'bank': self.current_bank,
-                                'card': self.current_card
-                            })
-                            seen_descriptions.add(key)
-            
-            i += 1
+        # Set card name if using Amex parser
+        if hasattr(parser, 'current_card'):
+            parser.current_card = self.current_card
         
-        return transactions
+        # Parse transactions using bank-specific logic
+        return parser.parse_transactions(text)
     
     def _parse_transaction_line(self, line: str) -> Optional[Dict[str, str]]:
         """

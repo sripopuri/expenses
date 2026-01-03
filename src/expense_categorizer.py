@@ -7,8 +7,8 @@ import json
 import os
 from pathlib import Path
 from typing import List, Dict, Optional
-from lm_studio_client import LMStudioClient, Message
-from merchant_extractor import MerchantExtractor
+from .lm_studio_client import LMStudioClient, Message
+from .merchant_extractor import MerchantExtractor
 
 
 class ExpenseCategorizer:

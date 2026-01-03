@@ -6,9 +6,9 @@ Combines PDF parsing and LLM-based expense categorization
 
 import json
 from pathlib import Path
-from pdf_parser import BankStatementParser
-from expense_categorizer import ExpenseCategorizer
-from lm_studio_client import LMStudioClient
+from .pdf_parser import BankStatementParser
+from .expense_categorizer import ExpenseCategorizer
+from .lm_studio_client import LMStudioClient
 
 
 def process_expenses(categorize: bool = True) -> None:
